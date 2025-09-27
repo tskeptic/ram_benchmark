@@ -120,8 +120,8 @@ run_memory_test() {
         dd if=/dev/urandom of="$temp_file" bs=1M seek=$((test_size_mb/2)) count=$((test_size_mb/2)) 2>/dev/null
     fi
     local write_end=$(date +%s.%N)
-    local write_time=$(echo "$write_end - $write_start" | bc -l)
-    local write_speed=$(echo "scale=2; $test_size_mb / $write_time" | bc -l)
+    local write_time=$(echo "$write_end - $write_start" | bc -l | awk '{printf "%.9f", $0}')
+    local write_speed=$(echo "scale=2; $test_size_mb / $write_time" | bc -l | awk '{printf "%.2f", $0}')
     
     result+=", \"write_time_seconds\": $write_time, \"write_speed_mb_per_sec\": $write_speed"
     
@@ -129,8 +129,8 @@ run_memory_test() {
     local read_start=$(date +%s.%N)
     dd if="$temp_file" of=/dev/null bs=1M 2>/dev/null
     local read_end=$(date +%s.%N)
-    local read_time=$(echo "$read_end - $read_start" | bc -l)
-    local read_speed=$(echo "scale=2; $test_size_mb / $read_time" | bc -l)
+    local read_time=$(echo "$read_end - $read_start" | bc -l | awk '{printf "%.9f", $0}')
+    local read_speed=$(echo "scale=2; $test_size_mb / $read_time" | bc -l | awk '{printf "%.2f", $0}')
     
     result+=", \"read_time_seconds\": $read_time, \"read_speed_mb_per_sec\": $read_speed"
     
@@ -165,8 +165,8 @@ EOF
             dd if="$temp_file" of=/dev/null bs=1k skip=$offset count=1 2>/dev/null
         done
         local random_read_end=$(date +%s.%N)
-        random_read_time=$(echo "$random_read_end - $random_read_start" | bc -l)
-        random_read_speed=$(echo "scale=2; 100 / $random_read_time" | bc -l)
+        random_read_time=$(echo "$random_read_end - $random_read_start" | bc -l | awk '{printf "%.9f", $0}')
+        random_read_speed=$(echo "scale=2; 100 / $random_read_time" | bc -l | awk '{printf "%.2f", $0}')
     fi
     
     result+=", \"random_read_time_seconds\": $random_read_time, \"random_read_speed_mb_per_sec\": $random_read_speed"
@@ -186,8 +186,8 @@ EOF
     done
     
     local bandwidth_end=$(date +%s.%N)
-    local bandwidth_time=$(echo "$bandwidth_end - $bandwidth_start" | bc -l)
-    local bandwidth_speed=$(echo "scale=2; ($test_data_size * 20) / $bandwidth_time" | bc -l)  # 20 = 10 iterations * 2 operations per iteration
+    local bandwidth_time=$(echo "$bandwidth_end - $bandwidth_start" | bc -l | awk '{printf "%.9f", $0}')
+    local bandwidth_speed=$(echo "scale=2; ($test_data_size * 20) / $bandwidth_time" | bc -l | awk '{printf "%.2f", $0}')  # 20 = 10 iterations * 2 operations per iteration
     
     result+=", \"bandwidth_time_seconds\": $bandwidth_time, \"bandwidth_speed_mb_per_sec\": $bandwidth_speed"
     
@@ -222,21 +222,21 @@ run_latency_test() {
         local start=$(date +%s.%N)
         dd if="$temp_file" of=/dev/null bs=4 skip=$offset count=1 2>/dev/null
         local end=$(date +%s.%N)
-        local latency=$(echo "$end - $start" | bc -l)
+        local latency=$(echo "$end - $start" | bc -l | awk '{printf "%.9f", $0}')
         latency_times+=($latency)
     done
     
     # Calculate statistics
     local total_latency=0
     for latency in "${latency_times[@]}"; do
-        total_latency=$(echo "$total_latency + $latency" | bc -l)
+        total_latency=$(echo "$total_latency + $latency" | bc -l | awk '{printf "%.9f", $0}')
     done
-    local avg_latency=$(echo "scale=9; $total_latency / 1000" | bc -l)
+    local avg_latency=$(echo "scale=9; $total_latency / 1000" | bc -l | awk '{printf "%.9f", $0}')
     
     # Sort for median calculation
     IFS=$'\n' sorted_latencies=($(sort -n <<<"${latency_times[*]}"))
     unset IFS
-    local median_latency=${sorted_latencies[500]}  # Middle value
+    local median_latency=$(echo "${sorted_latencies[500]}" | awk '{printf "%.9f", $0}')  # Middle value
     
     result+=", \"avg_latency_seconds\": $avg_latency, \"median_latency_seconds\": $median_latency"
     
